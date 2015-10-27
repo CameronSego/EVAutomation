@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "bb_comm.h"
+#include "pc_comm.h"
 
 int count = 0;
 
@@ -14,18 +14,21 @@ void TIMER0A_Handler()
   // Clear interrupt
   TIMER0->ICR |= 1;
   
-  count ++;
+  char data[] = { 'A', 'S', 'D', 'F', 'A', 'S', 'D', 'F' };
+  pc_comm_send(data, 8);
+  //pc_comm_read_update(nums, 3);
   
-  double nums[] = { 5.0*count, 2.0*count, 10.0*count };
-  bb_comm_update(nums, 3);
-  //bb_comm_read_update(nums, 3);
-  
-  unsigned waittime = 8000000;
+  unsigned waittime = 20000;
   // Kill TIMER0 A
   TIMER0->CTL &= ~0x1;
   TIMER0->TAILR = waittime;
   // Reenable TIMER0A, also enable stalling (for debugging)
   TIMER0->CTL |= 0x3;
+}
+
+void pc_comm_on_receive(const char * data, size_t data_size)
+{
+  count ++;
 }
 
 int main()
@@ -34,7 +37,7 @@ int main()
   __asm("DSB");
   __asm("ISB");
   
-  bb_comm_init();
+  pc_comm_init();
   count = 0;
   
   // Enable clocking to peripherals
