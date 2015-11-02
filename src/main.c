@@ -6,6 +6,7 @@
 #include <stddef.h>
 
 #include "pc_comm.h"
+#include "can.h"
 
 int count = 0;
 
@@ -33,9 +34,8 @@ void pc_comm_on_receive(const char * data, size_t data_size)
 
 int main()
 {
-  SCB->CPACR |= (0xF << 20);
-  __asm("DSB");
-  __asm("ISB");
+  //FPUEnable();
+  can_init();
   
   pc_comm_init();
   count = 0;
