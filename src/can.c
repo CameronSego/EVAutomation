@@ -85,7 +85,7 @@ void can_ReadBlock(CanPacket * packet)
   packet->arbid = sMsgObjectRx.ui32MsgID;
   memcpy(packet->data, sMsgObjectRx.pui8MsgData, 8);
 }
-/*
+
 void can_Init()
 {
   SYSCTL->RCGCGPIO |= 2; // GPIOB
@@ -94,7 +94,7 @@ void can_Init()
   // Pin 4,5 digital enable
   GPIOB->DEN |= 0x30;
   // Pin 4 input, pin 5 output
-  GPIOB->DIR |= 0x00;
+  GPIOB->DIR |= 0x20;
   // Pin 4,5 low
   //GPIOB->DATA |= 0x30;
   // Pin 4,5 alternate functionality (UART1 Tx)
@@ -107,7 +107,7 @@ void can_Init()
     .ui32SyncPropPhase1Seg = 2,
     .ui32Phase2Seg = 1,
     .ui32SJW = 1,
-    .ui32QuantumPrescaler = 8
+    .ui32QuantumPrescaler = 32
   };
   //tCANMsgObject sMsgObjectRx;
   //tCANMsgObject sMsgObjectTx;
@@ -127,13 +127,12 @@ void can_Init()
   //
   CANEnable(CAN0_BASE);
 }
-*/
 void can_Loopback(void)
 {
   CAN0->CTL |= 0x80;
   CAN0->TST |= 0x10; // Enable loopback
 }
-
+/*
 void can_Init()
 {
   SYSCTL->RCGCGPIO |= 2; // GPIOB
@@ -218,6 +217,7 @@ void can_Init()
   //
   memcpy(pui8BufferIn, sMsgObjectRx.pui8MsgData, 8);
 }
+*/
 
 /*
 void can_init()
