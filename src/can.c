@@ -107,7 +107,7 @@ void can_Init()
     .ui32SyncPropPhase1Seg = 2,
     .ui32Phase2Seg = 1,
     .ui32SJW = 1,
-    .ui32QuantumPrescaler = 32
+    .ui32QuantumPrescaler = 8
   };
   //tCANMsgObject sMsgObjectRx;
   //tCANMsgObject sMsgObjectTx;

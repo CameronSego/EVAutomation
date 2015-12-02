@@ -8,10 +8,24 @@ FILE * device_file = 0;
 
 int sendack(const uint8_t * data, size_t data_size)
 {
+  printf("sending: { ");
+  for(int i = 0 ; i < data_size ; i ++)
+    printf("%02X ", data[i]);
+  printf("}\n");
+
   fwrite(data, 1, data_size, device_file);
 
   uint8_t * ackdata = malloc(data_size);
   fread(ackdata, 1, data_size, device_file);
+
+  if(ferror(device_file))
+    printf("Error!\n");
+
+  printf("received: { ");
+  for(int i = 0 ; i < data_size ; i ++)
+    printf("%02X ", ackdata[i]);
+  printf("}\n");
+
   if(memcmp(data, ackdata, data_size) == 0)
   {
     free(ackdata);
@@ -112,7 +126,7 @@ int main(int argc, char ** argv)
   }
   else
   {
-    device_file = fopen(argv[1], "r+b");
+    device_file = fopen(argv[1], "a+b");
 
     if(!device_file)
     {
@@ -130,8 +144,12 @@ int main(int argc, char ** argv)
       uint16_t arbid;
       sscanf(argv[3], "%X", &arbid);
       printf("Transmitting arbid: %X\n", arbid);
+      uint32_t data32[8];
+      sscanf(argv[4], "%2X.%2X.%2X.%2X.%2X.%2X.%2X.%2X", data32+0,data32+1,data32+2,data32+3,data32+4,data32+5,data32+6,data32+7);
+
       uint8_t data[8];
-      sscanf(argv[4], "%2X.%2X.%2X.%2X.%2X.%2X.%2X.%2X", data+0,data+1,data+2,data+3,data+4,data+5,data+6,data+7);
+      for(int i = 0 ; i < 8 ; i ++)
+        data[i] = data32[i];
       printf("data: { %02X, %02X, %02X, %02X, %02X, %02X, %02X, %02X }\n", data[0],data[1],data[2],data[3],data[4],data[5],data[6],data[7]);
 
       transmit(arbid, data);

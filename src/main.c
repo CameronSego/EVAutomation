@@ -34,6 +34,60 @@ void pc_comm_on_receive(const char * data, size_t data_size)
 }
 */
 
+void pc_ReadData(uint8_t * buf, size_t size)
+{
+  for(unsigned i = 0 ; i < size ; i ++)
+  {
+    // Wait while the receive FIFO is empty
+    while(UART0->FR & 0x10) {}
+    buf[i] = UART0->DR;
+  }
+}
+void pc_WriteData(const uint8_t * buf, size_t size)
+{
+  for(unsigned i = 0 ; i < size ; i ++)
+  {
+    // Wait while transmit FIFO is full
+    while(UART0->FR & 0x20) {}
+    UART0->DR = buf[i];
+  }
+}
+
+void led_Init()
+{
+  SYSCTL->RCGCGPIO |= 0x20; // GPIOF
+  
+  // Pins [1:3] digital enable
+  GPIOF->DEN |= 0x0E;
+  // Pins [1:3] output
+  GPIOF->DIR |= 0x0E;
+  // Pins [0:1] high
+  //GPIOF->DATA |= 0x0E;
+}
+void led_Set(bool r, bool g, bool b)
+{
+  uint32_t dval = 0;
+  if(r) dval |= 0x2;
+  if(b) dval |= 0x4;
+  if(g) dval |= 0x8;
+  GPIOF->DATA &= ~(0xE);
+  GPIOF->DATA |= (dval & 0xE);
+}
+void led_Byte(uint8_t byte)
+{
+  for(int b = 0 ; b < 8 ; b ++)
+  {
+    led_Set(false, false, false);
+    for(unsigned i = 0 ; i < 500000 ; i ++);
+    if(byte & (1 << b))
+      led_Set(false, false, true);
+    else
+      led_Set(true, false, false);
+    for(unsigned i = 0 ; i < 1000000 ; i ++);
+  }
+  led_Set(true, true, true);
+}
+
 int main()
 {
   SYSCTL->RCGCGPIO |= 0x01; // GPIOA
@@ -74,23 +128,34 @@ int main()
   // Enable UART0
   UART0->CTL |= 0x1;
   
+  led_Init();
   can_Init();
   
   //can_ReadInit(0x400, 0x7F8, 4);
+  
   CanPacket packet = {
-    .arbid = 0x30,
+    .arbid = 0x165,
     // Right Mirror Move Right
     //.data = { 0x00, 0x00, 0x00, 0x01, 0x10, 0x2C, 0x80, 0x20 },
     // Unlock doors
-    .data = { 0x00, 0x00, 0x00, 0x01, 0x10, 0x28, 0xA0, 0x20 },
-    //.data = { 0xC0, 0xFF, 0xEE, 0xC0, 0xFF, 0xEE, 0xC0, 0xFF },
+    .data = { 0x20, 0xC0, 0x00, 0x00, 0x10, 0x65, 0x00, 0x00 },
   };
-  //can_Loopback();
+  
+  can_Loopback();
   //CanPacket packet2;
   //can_ReadBlock(&packet2);
   
-  while(1) {
+  led_Set(true, false, false);
+  
+  while(1)
+  {
+    //uint8_t buf[12];
+    //pc_ReadData(buf, 2);
+    //led_Byte(buf[0]);
+    //led_Byte(buf[1]);
+    
     //UART0->DR = 'a';
+    for(unsigned i = 0 ; i < 50000 ; i ++);
     can_Inject(&packet);
   }
   
