@@ -416,7 +416,7 @@
             <File>
               <FileName>driverlib.lib</FileName>
               <FileType>4</FileType>
-              <FilePath>C:\ti\TivaWare_C_Series-1.1\driverlib\rvmdk\driverlib.lib</FilePath>
+              <FilePath>.\driverlib.lib</FilePath>
             </File>
           </Files>
         </Group>
