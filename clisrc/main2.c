@@ -1,13 +1,16 @@
 
-#include <lua.h>
-#include <lualib.h>
-#include <lauxlib.h>
+#include <lua5.1/lua.h>
+#include <lua5.1/lualib.h>
+#include <lua5.1/lauxlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <unistd.h>
+#include <stdbool.h>
 
 #include <sys/types.h>
+#include <signal.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 #define FUNCTION_LOG    0x00
 #define FUNCTION_FILTER 0x01
@@ -41,10 +44,10 @@ int lua_Log(lua_State * L)
   data[5] = (arbid_mask >> 8) & 0xFF;
 
   senddata(data, 6);
-  printf("Logging on port id %d!\n", portid);
-  printf("arbid: 0x%04X\n", arbid);
-  printf("arbid_mask: 0x%04X\n", arbid_mask);
-  fflush(stdout);
+  //printf("Logging on port id %d!\n", portid);
+  //printf("arbid: 0x%04X\n", arbid);
+  //printf("arbid_mask: 0x%04X\n", arbid_mask);
+  //fflush(stdout);
   return 0;
 }
 int lua_Filter(lua_State * L)
@@ -81,38 +84,77 @@ int lua_Filter(lua_State * L)
   }
 
   senddata(data, 22);
-  printf("Filtering on port id %d!\n", portid);
-  printf("arbid: 0x%04X\n", arbid);
-  printf("arbid_mask: 0x%04X\n", arbid_mask);
-  fflush(stdout);
+  //printf("Filtering on port id %d!\n", portid);
+  //printf("arbid: 0x%04X\n", arbid);
+  //printf("arbid_mask: 0x%04X\n", arbid_mask);
+  //fflush(stdout);
   return 0;
+}
+
+pid_t start_logging(const char * device, const char * logfile)
+{
+  pid_t pid = fork();
+
+  if(pid == 0) {
+
+    FILE * infile = fopen(device, "rb");
+    FILE * outfile = fopen(logfile, "w");
+
+    if(infile && outfile)
+    {
+      while(true) {
+        uint8_t dbytes[4 + 2 + 8];
+        fread(dbytes, 1, sizeof(dbytes)/sizeof(*dbytes), infile);
+        uint32_t timestamp = 
+          dbytes[0] | 
+          (dbytes[1] << 8) | 
+          (dbytes[2] << 16) | 
+          (dbytes[3] << 24);
+        uint16_t arbid = 
+          dbytes[4] | 
+          (dbytes[5] << 8);
+        fprintf(outfile, "%u:0x%04X:", timestamp, arbid);
+        for(unsigned i = 0 ; i < 8 ; i ++) {
+          fprintf(outfile, "%02X ", dbytes[6 + i]);
+        }
+        fprintf(outfile, "\n");
+      }
+    }
+    else if(!infile) printf("LOGGER: Failed to open '%s' for reading.\n", device);
+    else if(!outfile) printf("LOGGER: Failed to open '%s' for writing.\n", logfile);
+  }
+
+  printf("Spawned log process with pid %d\n", pid);
+  return pid;
+}
+void exec_script(const char * filename)
+{
+  lua_State * L = luaL_newstate();
+  luaL_openlibs(L);
+
+  lua_pushcfunction(L, lua_Log); lua_setglobal(L, "Log");
+  lua_pushcfunction(L, lua_Filter); lua_setglobal(L, "Filter");
+
+  printf("Executing script: '%s'\n", filename);
+
+  luaL_dofile(L, filename);
 }
 
 int main(int argc, char ** argv)
 {
-  int pid = fork();
-
-  if(pid == 0)
-    system("cat /dev/ttyS4");
-
-  printf("Spawned cat process with pid %d\n", pid);
-
-  if(argc == 2)
+  if(argc >= 4)
   {
-    lua_State * L = luaL_newstate();
-    luaL_openlibs(L);
-
-    lua_pushcfunction(L, lua_Log); lua_setglobal(L, "Log");
-    lua_pushcfunction(L, lua_Filter); lua_setglobal(L, "Filter");
-
-    const char * scriptfile = argv[1];
-    printf("Executing script: '%s'\n", scriptfile);
-
-    luaL_dofile(L, scriptfile);
+    pid_t pid = start_logging(argv[2], argv[3]);
+    if(pid)
+    {
+      exec_script(argv[1]);
+      printf("Killing child process %d\n", pid);
+      kill(pid, SIGKILL);
+    }
   }
   else
   {
-    printf("Please specify a script to run.\n");
+    printf("Usage: CANSniffer [script] [device] [logfile]\n");
   }
 
   return 0;
