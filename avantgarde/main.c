@@ -8,22 +8,8 @@
 #include <driverlib\uart.h>
 #include "can.h"
 
-void pc_ReadData(uint8_t * buf, size_t size)
+void pcsr_Init()
 {
-  for(unsigned i = 0 ; i < size ; i ++)
-    buf[i] = UARTCharGet(UART2_BASE);
-}
-void pc_WriteData(const uint8_t * buf, size_t size)
-{
-  for(unsigned i = 0 ; i < size ; i ++)
-    UARTCharPut(UART2_BASE, buf[i]);
-}
-
-int main(void)
-{
-  FPUEnable();
-  
-  /*
   SYSCTL->RCGCGPIO |= 0x8;
   SYSCTL->RCGCUART |= 0x4;
   
@@ -61,15 +47,31 @@ int main(void)
   UART2->CTL |= 0x80;
   // Enable UART2
   UART2->CTL |= 0x1;
-  */
+}
+
+void pcsr_ReadData(uint8_t * buf, size_t size)
+{
+  for(unsigned i = 0 ; i < size ; i ++)
+    buf[i] = UARTCharGet(UART2_BASE);
+}
+void pcsr_WriteData(const uint8_t * buf, size_t size)
+{
+  for(unsigned i = 0 ; i < size ; i ++)
+    UARTCharPut(UART2_BASE, buf[i]);
+}
+
+int main(void)
+{
+  FPUEnable();
   
   can_Init();
+  //pcsr_Init();
   
   while(1)
   {
     //uint8_t buf[12];
-    //pc_ReadData(buf, 1);
-    //pc_WriteData("asdf", 4);
+    //pcsr_ReadData(buf, 12);
+    //pcsr_WriteData("asdf\r\n", 6);
     /*
     if(buf[0] == 'b') {
       pc_WriteData(buf, 1);
