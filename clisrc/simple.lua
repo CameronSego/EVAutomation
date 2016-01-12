@@ -1,0 +1,17 @@
+
+print("-- LOGGING BEGINS NOW! --")
+Log('CAN0', 0x07D, nil)
+Log('CAN0', 0x204, nil)
+Log('CAN0', 0x010, nil)
+--[[
+Filter('CAN0', 0x555, 0xFFF, 
+  { 0xBE, 0xEE, 0xEE, 0xFF, 0xBB, 0xEE, 0xEE, 0xFF },
+  { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 })
+]]
+local clock = os.clock
+local t0 = clock()
+while clock() - t0 <= 2 do 
+  -- Code below called constantly for 10 seconds
+end
+print("-- LOGGING OVER! --")
+

@@ -12,12 +12,8 @@ Filter('CAN1', 0x666, nil,
   { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 })
 
 local clock = os.clock
-function sleep(n)
-  local t0 = clock()
-  while clock() - t0 <= n do 
-    
-  end
+local t0 = clock()
+while clock() - t0 <= 10 do 
+  -- Called constantly for 10 seconds
 end
-
-sleep(10)
 
