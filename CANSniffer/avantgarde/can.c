@@ -17,6 +17,20 @@
 #include "driverlib\pin_map.h"
 #include "driverlib\sysctl.h"
 
+typedef struct LogEntry
+{
+  uint16_t arb_id;
+  uint16_t arb_mask;
+  can_LogCallback cb;
+} LogEntry;
+typedef struct FilterEntry
+{
+  uint16_t arb_id;
+  uint16_t arb_mask;
+  uint8_t data[8];
+  uint8_t data_mask[8];
+} FilterEntry;
+
 static tCANBitClkParms CANBitClk = {
   .ui32SyncPropPhase1Seg = 2,
   .ui32Phase2Seg = 1,
@@ -26,6 +40,15 @@ static tCANBitClkParms CANBitClk = {
 
 static int can0_txid = 24;
 static int can1_txid = 24;
+
+static LogEntry can0_log_entries[3];
+static unsigned can0_log_entry_num = 0;
+static LogEntry can1_log_entries[3];
+static unsigned can1_log_entry_num = 0;
+static FilterEntry can0_filter_entries[3];
+static unsigned    can0_filter_entry_num = 0;
+static FilterEntry can1_filter_entries[3];
+static unsigned    can1_filter_entry_num = 0;
 
 void CAN0_Handler(void)
 {
@@ -38,6 +61,35 @@ void CAN0_Handler(void)
   sMsgObjectRx.pui8MsgData = data;
   sMsgObjectRx.ui32MsgLen = 8;
   CANMessageGet(CAN0_BASE, objid, &sMsgObjectRx, true);
+  
+  for(unsigned i = 0 ; i < can0_log_entry_num ; i ++)
+  {
+    uint16_t arb_id = can0_log_entries[i].arb_id;
+    uint16_t arb_mask = can0_log_entries[i].arb_mask;
+    can_LogCallback cb = can0_log_entries[i].cb;
+    if((sMsgObjectRx.ui32MsgID & arb_mask) == (arb_id & arb_mask))
+    {
+      CanPacket p;
+      p.arbid = arb_id;
+      memcpy(p.data, data, 8);
+      cb(&p);
+    }
+  }
+  for(unsigned i = 0 ; i < can0_filter_entry_num ; i ++)
+  {
+    uint16_t arb_id = can0_filter_entries[i].arb_id;
+    uint16_t arb_mask = can0_filter_entries[i].arb_mask;
+    uint8_t * new_data = can0_filter_entries[i].data;
+    uint8_t * data_mask = can0_filter_entries[i].data_mask;
+    if((sMsgObjectRx.ui32MsgID & arb_mask) == (arb_id & arb_mask))
+    {
+      for(unsigned i = 0 ; i < 8 ; i ++)
+      {
+        data[i] &= ~(data_mask[i]);
+        data[i] |= data_mask[i] & new_data[i];
+      }
+    }
+  }
   
   CANMessageSet(CAN1_BASE, can1_txid, &sMsgObjectRx, MSG_OBJ_TYPE_TX);
   
@@ -57,6 +109,35 @@ void CAN1_Handler(void)
   sMsgObjectRx.pui8MsgData = data;
   sMsgObjectRx.ui32MsgLen = 8;
   CANMessageGet(CAN1_BASE, objid, &sMsgObjectRx, true);
+  
+  for(unsigned i = 0 ; i < can1_log_entry_num ; i ++)
+  {
+    uint16_t arb_id = can1_log_entries[i].arb_id;
+    uint16_t arb_mask = can1_log_entries[i].arb_mask;
+    can_LogCallback cb = can1_log_entries[i].cb;
+    if((sMsgObjectRx.ui32MsgID & arb_mask) == (arb_id & arb_mask))
+    {
+      CanPacket p;
+      p.arbid = arb_id;
+      memcpy(p.data, data, 8);
+      cb(&p);
+    }
+  }
+  for(unsigned i = 0 ; i < can1_filter_entry_num ; i ++)
+  {
+    uint16_t arb_id = can1_filter_entries[i].arb_id;
+    uint16_t arb_mask = can1_filter_entries[i].arb_mask;
+    uint8_t * new_data = can1_filter_entries[i].data;
+    uint8_t * data_mask = can1_filter_entries[i].data_mask;
+    if((sMsgObjectRx.ui32MsgID & arb_mask) == (arb_id & arb_mask))
+    {
+      for(unsigned i = 0 ; i < 8 ; i ++)
+      {
+        data[i] &= ~(data_mask[i]);
+        data[i] |= data_mask[i] & new_data[i];
+      }
+    }
+  }
   
   CANMessageSet(CAN0_BASE, can0_txid, &sMsgObjectRx, MSG_OBJ_TYPE_TX);
   
@@ -107,67 +188,9 @@ void SetReceiveAll(uint32_t canbase, size_t fifolen, void (*interrupt)(void))
   CANIntRegister(canbase, interrupt);
   CANIntEnable(canbase, CAN_INT_MASTER);
 }
-/*
-void can_ReadInit(uint32_t arbid, uint32_t arbmask, size_t fifolen)
-{
-  tCANMsgObject sMsgObjectRx;
-  // Configure a receive object.
-  //
-  sMsgObjectRx.ui32MsgID = arbid;
-  sMsgObjectRx.ui32MsgIDMask = arbmask;
-  sMsgObjectRx.ui32Flags = MSG_OBJ_USE_ID_FILTER | MSG_OBJ_FIFO;
-  sMsgObjectRx.pui8MsgData = 0;
-  //
-  // The first three message objects have the MSG_OBJ_FIFO set to indicate
-  // that they are part of a FIFO.
-  //
-  for(int i = 1 ; i < fifolen ; i ++) 
-    CANMessageSet(CAN0_BASE, i, &sMsgObjectRx, MSG_OBJ_TYPE_RX);
-  //CANMessageSet(CAN0_BASE, 2, &sMsgObjectRx, MSG_OBJ_TYPE_RX);
-  //CANMessageSet(CAN0_BASE, 3, &sMsgObjectRx, MSG_OBJ_TYPE_RX);
-  //
-  // Last message object does not have the MSG_OBJ_FIFO set to indicate that
-  // this is the last message.
-  //
-  sMsgObjectRx.ui32Flags = MSG_OBJ_USE_ID_FILTER;
-  CANMessageSet(CAN0_BASE, fifolen, &sMsgObjectRx, MSG_OBJ_TYPE_RX);
-}
-bool can_Read(CanPacket * packet)
-{
-  tCANMsgObject sMsgObjectRx;
-  //
-  // Read the message out of the message object.
-  //
-  CANMessageGet(CAN0_BASE, 1, &sMsgObjectRx, true);
-  if((CANStatusGet(CAN0_BASE, CAN_STS_NEWDAT) & 1) == 1)
-  {
-    packet->arbid = sMsgObjectRx.ui32MsgID;
-    memcpy(packet->data, sMsgObjectRx.pui8MsgData, 8);
-    return true;
-  }
-  return false;
-}
-*/
-void can_ReadBlock(CanPacket * packet)
-{
-  tCANMsgObject sMsgObjectRx;
-  //
-  // Wait for new data to become available.
-  //
-  uint32_t status = CANStatusGet(CAN0_BASE, CAN_STS_NEWDAT);
-  while((status & 0x1) == 0) {status = CANStatusGet(CAN0_BASE, CAN_STS_NEWDAT);}
-  //
-  // Read the message out of the message object.
-  //
-  CANMessageGet(CAN0_BASE, 1, &sMsgObjectRx, true);
-  //
-  // Process new data in sMsgObjectRx.pucMsgData.
-  //
-  packet->arbid = sMsgObjectRx.ui32MsgID;
-  memcpy(packet->data, sMsgObjectRx.pui8MsgData, 8);
-}
 
-void SuperLoopback(void)
+/*
+static void SuperLoopback(void)
 {
   //Disable auto retransmit
   CAN0->CTL |= 0x20;
@@ -177,6 +200,70 @@ void SuperLoopback(void)
   CAN0->TST |= 0x10; // Enable loopback
   CAN1->CTL |= 0x80;
   CAN1->TST |= 0x10; // Enable loopback
+}
+*/
+void can_SetLogging(uint8_t can_id, uint16_t arb_id, uint16_t arb_mask, can_LogCallback cb)
+{
+  if(can_id == 0)
+  {
+    const unsigned max_entries = sizeof(can0_log_entries)/sizeof(*can0_log_entries);
+    unsigned idx = can0_log_entry_num;
+    if(idx < max_entries)
+    {
+      can0_log_entries[idx].arb_id = arb_id;
+      can0_log_entries[idx].arb_mask = arb_mask;
+      can0_log_entries[idx].cb = cb;
+      can0_log_entry_num ++;
+    }
+  }
+  else if(can_id == 1)
+  {
+    const unsigned max_entries = sizeof(can1_log_entries)/sizeof(*can1_log_entries);
+    unsigned idx = can1_log_entry_num;
+    if(idx < max_entries)
+    {
+      can1_log_entries[idx].arb_id = arb_id;
+      can1_log_entries[idx].arb_mask = arb_mask;
+      can1_log_entries[idx].cb = cb;
+      can1_log_entry_num ++;
+    }
+  }
+}
+void can_SetFiltering(uint8_t can_id, uint16_t arb_id, uint16_t arb_mask, uint8_t * data, uint8_t * data_mask)
+{
+  if(can_id == 0)
+  {
+    const unsigned max_entries = sizeof(can0_filter_entries)/sizeof(*can0_filter_entries);
+    unsigned idx = can0_filter_entry_num;
+    if(idx < max_entries)
+    {
+      can0_filter_entries[idx].arb_id = arb_id;
+      can0_filter_entries[idx].arb_mask = arb_mask;
+      memcpy(can0_filter_entries[idx].data, data, 8);
+      memcpy(can0_filter_entries[idx].data_mask, data_mask, 8);
+      can0_filter_entry_num ++;
+    }
+  }
+  else if(can_id == 1)
+  {
+    const unsigned max_entries = sizeof(can1_filter_entries)/sizeof(*can1_filter_entries);
+    unsigned idx = can1_filter_entry_num;
+    if(idx < max_entries)
+    {
+      can1_filter_entries[idx].arb_id = arb_id;
+      can1_filter_entries[idx].arb_mask = arb_mask;
+      memcpy(can1_filter_entries[idx].data, data, 8);
+      memcpy(can1_filter_entries[idx].data_mask, data_mask, 8);
+      can1_filter_entry_num ++;
+    }
+  }
+}
+void can_ResetFunctions()
+{
+  can0_log_entry_num = 0;
+  can0_filter_entry_num = 0;
+  can1_log_entry_num = 0;
+  can1_filter_entry_num = 0;
 }
 void can_Init(void)
 {
@@ -210,6 +297,8 @@ void can_Init(void)
   IntMasterEnable();
   SetReceiveAll(CAN0_BASE, 8, CAN0_Handler);
   SetReceiveAll(CAN1_BASE, 8, CAN1_Handler);
+  
+  can_ResetFunctions();
   
   //SuperLoopback();
   
