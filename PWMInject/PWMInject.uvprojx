@@ -363,7 +363,7 @@
             <wLevel>2</wLevel>
             <uThumb>0</uThumb>
             <uSurpInc>0</uSurpInc>
-            <uC99>0</uC99>
+            <uC99>1</uC99>
             <useXO>0</useXO>
             <v6Lang>0</v6Lang>
             <v6LangP>0</v6LangP>
@@ -426,6 +426,11 @@
               <FileType>4</FileType>
               <FilePath>C:\ti\TivaWare_C_Series-1.1\driverlib\rvmdk\driverlib.lib</FilePath>
             </File>
+            <File>
+              <FileName>can.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\can.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -455,7 +460,7 @@
       </component>
     </components>
     <files>
-      <file attr="config" category="source" condition="TM4C129x" name="Device\Source\ARM\startup_TM4C129.s">
+      <file attr="config" category="source" condition="TM4C129x" name="Device\Source\ARM\startup_TM4C129.s" version="1.0.0">
         <instance index="0">RTE\Device\TM4C1294NCPDT\startup_TM4C129.s</instance>
         <component Cclass="Device" Cgroup="Startup" Cvendor="Keil" Cversion="1.0.0" condition="TM4C CMSIS Device"/>
         <package name="TM4C_DFP" schemaVersion="1.2" url="http://www.keil.com/pack/" vendor="Keil" version="1.0.0"/>
@@ -463,7 +468,7 @@
           <targetInfo name="Target 1"/>
         </targetInfos>
       </file>
-      <file attr="config" category="source" condition="TM4C129x" name="Device\Source\system_tm4c129.c">
+      <file attr="config" category="source" condition="TM4C129x" name="Device\Source\system_tm4c129.c" version="1.0.0">
         <instance index="0">RTE\Device\TM4C1294NCPDT\system_tm4c129.c</instance>
         <component Cclass="Device" Cgroup="Startup" Cvendor="Keil" Cversion="1.0.0" condition="TM4C CMSIS Device"/>
         <package name="TM4C_DFP" schemaVersion="1.2" url="http://www.keil.com/pack/" vendor="Keil" version="1.0.0"/>
