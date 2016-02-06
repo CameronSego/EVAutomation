@@ -4,8 +4,8 @@ extern "C"
 #include "can.h"
 }
 
-#include <tm4c1294ncpdt.h>
 #define PART_TM4C1294NCPDT
+#include <tm4c1294ncpdt.h>
 #include <driverlib/sysctl.h>
 #include <driverlib/gpio.h>
 #include <driverlib/pin_map.h>
@@ -13,6 +13,7 @@ extern "C"
 #include <driverlib/fpu.h>
 #include <driverlib/interrupt.h>
 #include <driverlib/timer.h>
+#include <driverlib/i2c.h>
 
 void SetSteerPWM(float duty_cycle)
 {
@@ -111,8 +112,10 @@ int main(void)
   SysCtlPeripheralEnable(SYSCTL_PERIPH_CAN0);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOJ);
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOK);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C4);
   
   GPIOPinTypePWM(GPIOF_AHB_BASE, GPIO_PIN_2 | GPIO_PIN_3);
   GPIOPinConfigure(GPIO_PF2_M0PWM2);
@@ -123,6 +126,31 @@ int main(void)
   GPIOIntRegister(GPIOJ_AHB_BASE, SwitchHandler);
   GPIOIntTypeSet(GPIOJ_AHB_BASE, GPIO_INT_PIN_0 | GPIO_INT_PIN_1, GPIO_BOTH_EDGES);
   GPIOIntEnable(GPIOJ_AHB_BASE, GPIO_INT_PIN_0 | GPIO_INT_PIN_1);
+  
+  //GPIOPinTypeGPIOOutput(GPIOK_BASE, GPIO_PIN_6 | GPIO_PIN_7);
+  //GPIOPinWrite(GPIOK_BASE, GPIO_PIN_6 | GPIO_PIN_7, GPIO_PIN_6 | GPIO_PIN_7);
+  
+  GPIOPinTypeI2CSCL(GPIOK_BASE, GPIO_PIN_6);
+  GPIOPinTypeI2C(GPIOK_BASE, GPIO_PIN_7);
+  GPIOPinConfigure(GPIO_PK6_I2C4SCL);
+  GPIOPinConfigure(GPIO_PK7_I2C4SDA);
+  
+  I2CMasterInitExpClk(I2C4_BASE, 16000000, true);
+  I2CMasterSlaveAddrSet(I2C4_BASE, 0xC8, false);
+  I2CMasterDataPut(I2C4_BASE, 0x80);
+  
+  // Just for testing
+  I2CMasterControl(I2C4_BASE, I2C_MASTER_CMD_SINGLE_SEND);
+  while(I2CMasterBusBusy(I2C4_BASE)) {}
+  
+  /* Real stuff
+  I2CMasterDataPut(I2C4_BASE, 0x80);
+  I2CMasterControl(I2C4_BASE, I2C_MASTER_CMD_BURST_SEND_START);
+  I2CMasterDataPut(I2C4_BASE, 0xFF);
+  I2CMasterControl(I2C4_BASE, I2C_MASTER_CMD_BURST_SEND_CONT);
+  I2CMasterDataPut(I2C4_BASE, 0x00);
+  I2CMasterControl(I2C4_BASE, I2C_MASTER_CMD_BURST_SEND_FINISH);
+  */
   
   //GPIOPinTypeCAN(GPIOA_AHB_BASE, GPIO_PIN_0 | GPIO_PIN_1);
   //GPIOPinConfigure(GPIO_PA0_CAN0RX);
