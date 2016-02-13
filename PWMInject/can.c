@@ -91,6 +91,7 @@ static void SetReceiveAll(uint32_t canbase, size_t fifolen, void (*interrupt)(vo
 
 void can_Init()
 {
+  /*
   SYSCTL->RCGCGPIO |= 0x03; // GPIOA and GPIOB
   SYSCTL->RCGCCAN |= 0x03; // CAN1 and CAN0
   
@@ -115,8 +116,8 @@ void can_Init()
   // Clear and set port mux for GPIOB 4,5
   GPIOB_AHB->PCTL &= ~0x000000FF;
   GPIOB_AHB->PCTL |= 0x00000077;
+  */
   
-  IntMasterEnable();
   SetReceiveAll(CAN0_BASE, 8, CAN0_Handler);
   SetReceiveAll(CAN1_BASE, 8, CAN1_Handler);
 }
