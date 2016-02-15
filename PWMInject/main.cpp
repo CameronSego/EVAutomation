@@ -60,7 +60,7 @@ namespace accelerator
   void SetNormalized(float val)
   {
     accelerator_value = val;
-    //SetVoltage(0.39f + val * (0.6f - 0.39f));
+    SetVoltage(0.39f + val * (0.6f - 0.39f));
   }
   void Init()
   {
@@ -71,22 +71,56 @@ namespace accelerator
     GPIOPinConfigure(GPIO_PK6_I2C4SCL);
     GPIOPinConfigure(GPIO_PK7_I2C4SDA);
     
-    //SetADCVoltage(0.0f);
+		//Set initial voltage
+    SetVoltage(0.39f);
   }
 }
 
 namespace brakes
 {
-  void SetPWM(float duty_cycle)
+  void SetPWM(float duty_cycle1, float duty_cycle2)
   {
+		const uint32_t pwm0_clk_period = 29634;
+		const uint32_t pwm2_clk_period = 33094;
+		PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, pwm0_clk_period);
+		PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, pwm2_clk_period);
+		if(duty_cycle1 >= 0.843f)
+		{
+			duty_cycle1 = 0.843f;
+		}
+		if(duty_cycle1 <= 0.535f)
+		{
+			duty_cycle1 = 0.535f;
+		}
+		if(duty_cycle2 >= 0.493f)
+		{
+			duty_cycle2 = 0.493f;
+		}
+		if(duty_cycle2 <= 0.155f)
+		{
+			duty_cycle2 = 0.155f;
+		}
+		PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, pwm0_clk_period*duty_cycle1);
+		PWMPulseWidthSet(PWM0_BASE, PWM_OUT_4, pwm2_clk_period*duty_cycle2);	
   }
-  volatile float brake_value = 0.0f; // For debugging
+  volatile float brake_value1 = 0.0f; // For debugging
+	volatile float brake_value2 = 0.0f;
+	
   void SetNormalized(float val)
   {
-    brake_value = val;
+    brake_value1 = (1.0f-val)*(.843f-.535f)+.535f;
+		brake_value2 = (val)*(.493f-.155f)+.155f;
+		SetPWM(brake_value1,brake_value2);
   }
   void Init()
   {
+		// Brake pinout F1 and G0
+		PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC);
+		PWMGenConfigure(PWM0_BASE, PWM_GEN_2, PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC);
+		brakes::SetPWM(0.843f, 0.155f); // Resting duty % for brakes
+		PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+		PWMGenEnable(PWM0_BASE, PWM_GEN_2);
+		PWMOutputState(PWM0_BASE, (PWM_OUT_1_BIT | PWM_OUT_4_BIT), true);
   }
 }
 
@@ -255,6 +289,7 @@ int main(void)
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_CAN1);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOJ);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOK);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);
@@ -263,10 +298,15 @@ int main(void)
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOM);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C4);
   
-  // Steering PWM
-  GPIOPinTypePWM(GPIOF_AHB_BASE, GPIO_PIN_2 | GPIO_PIN_3);
+  // Steering PWM 
+  GPIOPinTypePWM(GPIOF_AHB_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3);
   GPIOPinConfigure(GPIO_PF2_M0PWM2);
   GPIOPinConfigure(GPIO_PF3_M0PWM3);
+	
+	// Braking PWM
+	GPIOPinTypePWM(GPIOG_AHB_BASE, GPIO_PIN_0);
+	GPIOPinConfigure(GPIO_PF1_M0PWM1);
+	GPIOPinConfigure(GPIO_PG0_M0PWM4);
   
   // Buttons
   /*
@@ -321,5 +361,6 @@ int main(void)
     
     UpdateAcceleration(accel_pulse_width);
     UpdateSteering(steer_pulse_width);
+		//UpdateBraking(brake_pulse_width);
   }
 }
