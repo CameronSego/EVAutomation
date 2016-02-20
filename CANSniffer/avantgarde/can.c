@@ -1,5 +1,6 @@
 
 #include "can.h"
+#include "list.h"
 #include <TM4C1294NCPDT.h>
 #include <string.h>
 #include <stdbool.h>
@@ -16,6 +17,49 @@
 #include <driverlib\interrupt.h>
 #include "driverlib\pin_map.h"
 #include "driverlib\sysctl.h"
+
+// Lists for the different Arb IDs.
+struct list *id_4D;
+struct list *id_11A;
+struct list *id_130;
+struct list *id_139;
+struct list *id_156;
+struct list *id_165;
+struct list *id_167;
+struct list *id_171;
+struct list *id_178;
+struct list *id_202;
+struct list *id_179;
+struct list *id_204;
+struct list *id_185;
+struct list *id_25C;
+struct list *id_1A0;
+struct list *id_200;
+struct list *id_230;
+struct list *id_25A;
+struct list *id_25B;
+struct list *id_270;
+struct list *id_280;
+struct list *id_312;
+struct list *id_352;
+struct list *id_365;
+struct list *id_366;
+struct list *id_367;
+struct list *id_368;
+struct list *id_369;
+struct list *id_410;
+struct list *id_421;
+struct list *id_42D;
+struct list *id_42F;
+struct list *id_43E;
+struct list *id_440;
+struct list *id_472;
+struct list *id_473;
+struct list *id_474;
+struct list *id_475;
+struct list *id_476;
+struct list *id_477;
+struct list *id_595;
 
 typedef struct LogEntry
 {
@@ -50,6 +94,176 @@ static unsigned    can0_filter_entry_num = 0;
 static FilterEntry can1_filter_entries[3];
 static unsigned    can1_filter_entry_num = 0;
 
+void Push_Message(uint32_t _ID, uint8_t data[8])
+{
+	switch(_ID)
+	{
+		case 0x4D:
+		push(id_4D, data);
+		break;
+ 
+	case 0x11A:
+		push(id_11A, data);
+		break;
+ 
+	case 0x130:
+		push(id_130, data);
+		break;
+ 
+	case 0x139:
+		push(id_139, data);
+		break;
+ 
+	case 0x156:
+		push(id_156, data);
+		break;
+ 
+	case 0x165:
+		push(id_165, data);
+		break;
+ 
+	case 0x167:
+		push(id_167, data);
+		break;
+ 
+	case 0x171:
+		push(id_171, data);
+		break;
+ 
+	case 0x178:
+		push(id_178, data);
+		break;
+ 
+	case 0x202:
+		push(id_202, data);
+		break;
+ 
+	case 0x179:
+		push(id_179, data);
+		break;
+ 
+	case 0x204:
+		push(id_204, data);
+		break;
+ 
+	case 0x185:
+		push(id_185, data);
+		break;
+ 
+	case 0x25C:
+		push(id_25C, data);
+		break;
+ 
+	case 0x1A0:
+		push(id_1A0, data);
+		break;
+ 
+	case 0x200:
+		push(id_200, data);
+		break;
+ 
+	case 0x230:
+		push(id_230, data);
+		break;
+ 
+	case 0x25A:
+		push(id_25A, data);
+		break;
+ 
+	case 0x25B:
+		push(id_25B, data);
+		break;
+ 
+	case 0x270:
+		push(id_270, data);
+		break;
+ 
+	case 0x280:
+		push(id_280, data);
+		break;
+ 
+	case 0x312:
+		push(id_312, data);
+		break;
+ 
+	case 0x352:
+		push(id_352, data);
+		break;
+ 
+	case 0x365:
+		push(id_365, data);
+		break;
+ 
+	case 0x366:
+		push(id_366, data);
+		break;
+ 
+	case 0x367:
+		push(id_367, data);
+		break;
+ 
+	case 0x368:
+		push(id_368, data);
+		break;
+ 
+	case 0x369:
+		push(id_369, data);
+		break;
+ 
+	case 0x410:
+		push(id_410, data);
+		break;
+ 
+	case 0x421:
+		push(id_421, data);
+		break;
+ 
+	case 0x42D:
+		push(id_42D, data);
+		break;
+ 
+	case 0x42F:
+		push(id_42F, data);
+		break;
+ 
+	case 0x43E:
+		push(id_43E, data);
+		break;
+ 
+	case 0x440:
+		push(id_440, data);
+		break;
+ 
+	case 0x472:
+		push(id_472, data);
+		break;
+ 
+	case 0x473:
+		push(id_473, data);
+		break;
+ 
+	case 0x474:
+		push(id_474, data);
+		break;
+ 
+	case 0x475:
+		push(id_475, data);
+		break;
+ 
+	case 0x476:
+		push(id_476, data);
+		break;
+ 
+	case 0x477:
+		push(id_477, data);
+		break;
+ 
+	case 0x595:
+		push(id_595, data);
+		break;
+	}
+}
+
 void CAN0_Handler(void)
 {
   uint32_t objid = CANIntStatus(CAN0_BASE, CAN_INT_STS_CAUSE);
@@ -62,35 +276,11 @@ void CAN0_Handler(void)
   sMsgObjectRx.ui32MsgLen = 8;
   CANMessageGet(CAN0_BASE, objid, &sMsgObjectRx, true);
   
-  for(unsigned i = 0 ; i < can0_log_entry_num ; i ++)
-  {
-    uint16_t arb_id = can0_log_entries[i].arb_id;
-    uint16_t arb_mask = can0_log_entries[i].arb_mask;
-    can_LogCallback cb = can0_log_entries[i].cb;
-    if((sMsgObjectRx.ui32MsgID & arb_mask) == (arb_id & arb_mask))
-    {
-      CanPacket p;
-      p.arbid = arb_id;
-      memcpy(p.data, data, 8);
-      cb(&p);
-    }
-  }
-  for(unsigned i = 0 ; i < can0_filter_entry_num ; i ++)
-  {
-    uint16_t arb_id = can0_filter_entries[i].arb_id;
-    uint16_t arb_mask = can0_filter_entries[i].arb_mask;
-    uint8_t * new_data = can0_filter_entries[i].data;
-    uint8_t * data_mask = can0_filter_entries[i].data_mask;
-    if((sMsgObjectRx.ui32MsgID & arb_mask) == (arb_id & arb_mask))
-    {
-      for(unsigned i = 0 ; i < 8 ; i ++)
-      {
-        data[i] &= ~(data_mask[i]);
-        data[i] |= data_mask[i] & new_data[i];
-      }
-    }
-  }
-  
+  Push_Message(sMsgObjectRx.ui32MsgID, sMsgObjectRx.pui8MsgData);
+	
+  Pop_Message(sMsgObjectRx.ui32MsgID, data);
+  sMsgObjectRx.pui8MsgData = data;
+	
   CANMessageSet(CAN1_BASE, can1_txid, &sMsgObjectRx, MSG_OBJ_TYPE_TX);
   
   can1_txid ++;
@@ -299,7 +489,51 @@ void can_Init(void)
   SetReceiveAll(CAN1_BASE, 8, CAN1_Handler);
   
   can_ResetFunctions();
-  
+
+	// Init for the lists
+	init_list(id_4D, 0x4D);
+	init_list(id_11A, 0x11A);
+	init_list(id_130, 0x130);
+	init_list(id_139, 0x139);
+	init_list(id_156, 0x156);
+	init_list(id_165, 0x165);
+	init_list(id_167, 0x167);
+	init_list(id_171, 0x171);
+	init_list(id_178, 0x178);
+	init_list(id_202, 0x202);
+	init_list(id_179, 0x179);
+	init_list(id_204, 0x204);
+	init_list(id_185, 0x185);
+	init_list(id_25C, 0x25C);
+	init_list(id_1A0, 0x1A0);
+	init_list(id_200, 0x200);
+	init_list(id_230, 0x230);
+	init_list(id_25A, 0x25A);
+	init_list(id_25B, 0x25B);
+	init_list(id_270, 0x270);
+	init_list(id_280, 0x280);
+	init_list(id_312, 0x312);
+	init_list(id_352, 0x352);
+	init_list(id_365, 0x365);
+	init_list(id_366, 0x366);
+	init_list(id_367, 0x367);
+	init_list(id_368, 0x368);
+	init_list(id_369, 0x369);
+	init_list(id_410, 0x410);
+	init_list(id_421, 0x421);
+	init_list(id_42D, 0x42D);
+	init_list(id_42F, 0x42F);
+	init_list(id_43E, 0x43E);
+	init_list(id_440, 0x440);
+	init_list(id_472, 0x472);
+	init_list(id_473, 0x473);
+	init_list(id_474, 0x474);
+	init_list(id_475, 0x475);
+	init_list(id_476, 0x476);
+	init_list(id_477, 0x477);
+	init_list(id_595, 0x595);
+	
+	
   //SuperLoopback();
   
   /*
