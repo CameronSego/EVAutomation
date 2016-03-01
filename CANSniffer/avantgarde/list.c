@@ -9,14 +9,20 @@ void init_list(struct list *_list, uint32_t _ID)
 	_list->ArbID = _ID;
 }
 
-void push(struct list *_list, uint8_t data[8])
+void push(struct list *_list, uint8_t *data)
 {
 	// Check to see if the root node is NULL before doing
 	// a recursive push.
 	if(_list->root == NULL)
 	{
+		_list->root = (struct node*)malloc(sizeof(struct node));
 		// Copy the data to the root
-		memcpy(_list->root->data, data, sizeof(uint8_t [8]));
+		memcpy(_list->root->data, data, 8);
+		/*for(int i = 0; i < 8; ++i)
+		{
+			_list->root->data[i] = data[i];
+		}*/
+		_list->root->next = NULL;
 		return;
 	}
 	// Start the recursive push

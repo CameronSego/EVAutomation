@@ -19,7 +19,7 @@ struct list
 
 void init_list(struct list *_list, uint32_t _ID);
 
-void push(struct list *_list, uint8_t data[8]);
+void push(struct list *_list, uint8_t *data);
 
 void push_r(struct node *_node, uint8_t data[8]);
 

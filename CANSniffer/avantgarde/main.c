@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include <driverlib/sysctl.h>
 #include <driverlib\fpu.h>
 #include <inc\hw_uart.h>
 #include <driverlib\uart.h>
@@ -11,11 +12,7 @@
 #include "can.h"
 #include "list.h"
 
-void button_Init()
-{
-	// TODO:
-	SYSCTL->RCGCGPIO |= 0x
-}
+//#pragma (import __use_no_semihosting)
 
 void led_Init()
 {
