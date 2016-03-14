@@ -19,4 +19,12 @@ extern void can_ResetFunctions(void);
 
 extern void can_Init(void);
 
+void Push_Message(uint32_t _ID, uint8_t data[8]);
+void Pop_Message(uint32_t _ID, uint8_t data[8]);
+
+void button_Init(void);
+void button_int(void);
+void led_Set(bool a, bool b);
+
+
 #endif

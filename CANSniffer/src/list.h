@@ -19,14 +19,10 @@ struct list
 
 void init_list(struct list *_list, uint32_t _ID);
 
-<<<<<<< HEAD
-void push(struct list *_list, uint8_t data[8]);
-=======
-void push(struct list *_list, uint8_t *data);
->>>>>>> origin/master
+void push(struct list _list, uint8_t data[8]);
 
 void push_r(struct node *_node, uint8_t data[8]);
 
-void pop(struct list *_list, uint8_t data[8]);
+void pop(struct list _list, uint8_t data[8]);
 
 void pop_r(struct node *_node, uint8_t data[8]);

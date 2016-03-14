@@ -3,10 +3,16 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include <driverlib/sysctl.h>
 #include <driverlib\fpu.h>
 #include <inc\hw_uart.h>
 #include <driverlib\uart.h>
+#include <driverlib\gpio.h>
+#include <driverlib\pin_map.h>
 #include "can.h"
+#include "list.h"
+
+//#pragma (import __use_no_semihosting)
 
 void led_Init()
 {
@@ -127,6 +133,7 @@ int main(void)
   FPUEnable();
   
   led_Init();
+	button_Init();
   
   can_Init();
   pcsr_Init();
@@ -143,7 +150,7 @@ int main(void)
   {
     led_Byte(UARTCharGetNonBlocking(UART2_BASE));
   }
-  
+	
   while(1)
   {
     uint8_t buf[22];

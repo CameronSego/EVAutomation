@@ -8,6 +8,52 @@
 #include "pc_comm.h"
 #include "can.h"
 
+#include "list.h"
+
+
+// Lists for the different Arb IDs.
+struct list *id_4D;
+struct list *id_11A;
+struct list *id_130;
+struct list *id_139;
+struct list *id_156;
+struct list *id_165;
+struct list *id_167;
+struct list *id_171;
+struct list *id_178;
+struct list *id_202;
+struct list *id_179;
+struct list *id_204;
+struct list *id_185;
+struct list *id_25C;
+struct list *id_1A0;
+struct list *id_200;
+struct list *id_230;
+struct list *id_25A;
+struct list *id_25B;
+struct list *id_270;
+struct list *id_280;
+struct list *id_312;
+struct list *id_352;
+struct list *id_365;
+struct list *id_366;
+struct list *id_367;
+struct list *id_368;
+struct list *id_369;
+struct list *id_410;
+struct list *id_421;
+struct list *id_42D;
+struct list *id_42F;
+struct list *id_43E;
+struct list *id_440;
+struct list *id_472;
+struct list *id_473;
+struct list *id_474;
+struct list *id_475;
+struct list *id_476;
+struct list *id_477;
+struct list *id_595;
+
 /*
 int count = 0;
 
@@ -146,6 +192,50 @@ int main()
   //can_ReadBlock(&packet2);
   
   led_Set(true, false, false);
+	
+	
+	// Init for the lists
+	init_list(id_4D, 0x4D);
+	init_list(id_11A, 0x11A);
+	init_list(id_130, 0x130);
+	init_list(id_139, 0x139);
+	init_list(id_156, 0x156);
+	init_list(id_165, 0x165);
+	init_list(id_167, 0x167);
+	init_list(id_171, 0x171);
+	init_list(id_178, 0x178);
+	init_list(id_202, 0x202);
+	init_list(id_179, 0x179);
+	init_list(id_204, 0x204);
+	init_list(id_185, 0x185);
+	init_list(id_25C, 0x25C);
+	init_list(id_1A0, 0x1A0);
+	init_list(id_200, 0x200);
+	init_list(id_230, 0x230);
+	init_list(id_25A, 0x25A);
+	init_list(id_25B, 0x25B);
+	init_list(id_270, 0x270);
+	init_list(id_280, 0x280);
+	init_list(id_312, 0x312);
+	init_list(id_352, 0x352);
+	init_list(id_365, 0x365);
+	init_list(id_366, 0x366);
+	init_list(id_367, 0x367);
+	init_list(id_368, 0x368);
+	init_list(id_369, 0x369);
+	init_list(id_410, 0x410);
+	init_list(id_421, 0x421);
+	init_list(id_42D, 0x42D);
+	init_list(id_42F, 0x42F);
+	init_list(id_43E, 0x43E);
+	init_list(id_440, 0x440);
+	init_list(id_472, 0x472);
+	init_list(id_473, 0x473);
+	init_list(id_474, 0x474);
+	init_list(id_475, 0x475);
+	init_list(id_476, 0x476);
+	init_list(id_477, 0x477);
+	init_list(id_595, 0x595);
   
   while(1)
   {

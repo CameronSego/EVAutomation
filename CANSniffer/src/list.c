@@ -9,33 +9,18 @@ void init_list(struct list *_list, uint32_t _ID)
 	_list->ArbID = _ID;
 }
 
-<<<<<<< HEAD
-void push(struct list *_list, uint8_t data[8])
-=======
-void push(struct list *_list, uint8_t *data)
->>>>>>> origin/master
+void push(struct list _list, uint8_t data[8])
 {
 	// Check to see if the root node is NULL before doing
 	// a recursive push.
-	if(_list->root == NULL)
+	if(_list.root == NULL)
 	{
-<<<<<<< HEAD
 		// Copy the data to the root
-		memcpy(_list->root->data, data, sizeof(uint8_t [8]));
-=======
-		_list->root = (struct node*)malloc(sizeof(struct node));
-		// Copy the data to the root
-		memcpy(_list->root->data, data, 8);
-		/*for(int i = 0; i < 8; ++i)
-		{
-			_list->root->data[i] = data[i];
-		}*/
-		_list->root->next = NULL;
->>>>>>> origin/master
+		memcpy(_list.root->data, data, sizeof(uint8_t [8]));
 		return;
 	}
 	// Start the recursive push
-	push_r(_list->root, data);
+	push_r(_list.root, data);
 }
 
 void push_r(struct node *_node, uint8_t data[8])
@@ -66,28 +51,28 @@ void push_r(struct node *_node, uint8_t data[8])
 	push_r(_node->next, data);
 }
 
-void pop(struct list *_list, uint8_t data[8])
+void pop(struct list _list, uint8_t data[8])
 {
 	// Check to see if the root node is NULL before doing
 	// a recursive pop.
-	if(_list->root == NULL)
+	if(_list.root == NULL)
 	{
 		return;
 	}
 	// check to see if the root node is the only node in the list
-	else if(_list->root->next == NULL)
+	else if(_list.root->next == NULL)
 	{
 		// Copy the data to the data array
-		memcpy(data, _list->root->data, sizeof(uint8_t [8]));
+		memcpy(data, _list.root->data, sizeof(uint8_t [8]));
 		
 		// Set root to NULL to signify the list is empty
-		_list->root = NULL;
+		_list.root = NULL;
 		
 		// return to 
 		return;
 	}
 	// Start the recursive pop
-	pop_r(_list->root, data);
+	pop_r(_list.root, data);
 }
 
 void pop_r(struct node *_node, uint8_t data[8])
@@ -108,4 +93,3 @@ void pop_r(struct node *_node, uint8_t data[8])
 	// Step to the next node
 	pop_r(_node->next, data);
 }
-
