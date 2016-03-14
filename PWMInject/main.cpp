@@ -14,6 +14,7 @@ extern "C"
 #include <driverlib/interrupt.h>
 #include <driverlib/timer.h>
 #include <driverlib/i2c.h>
+#include <driverlib/watchdog.h>
 
 namespace steering
 {
@@ -80,8 +81,8 @@ namespace brakes
 {
   void SetPWM(float duty_cycle1, float duty_cycle2)
   {
-		const uint32_t pwm0_clk_period = 29634;
-		const uint32_t pwm2_clk_period = 33094;
+		const uint32_t pwm0_clk_period = 30200;
+		const uint32_t pwm2_clk_period = 33506;
 		PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, pwm0_clk_period);
 		PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, pwm2_clk_period);
 		if(duty_cycle1 >= 0.843f)
@@ -101,7 +102,7 @@ namespace brakes
 			duty_cycle2 = 0.155f;
 		}
 		PWMPulseWidthSet(PWM0_BASE, PWM_OUT_1, pwm0_clk_period*duty_cycle1);
-		PWMPulseWidthSet(PWM0_BASE, PWM_OUT_4, pwm2_clk_period*duty_cycle2);	
+		PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, pwm2_clk_period*duty_cycle2);	
   }
   volatile float brake_value1 = 0.0f; // For debugging
 	volatile float brake_value2 = 0.0f;
@@ -114,87 +115,15 @@ namespace brakes
   }
   void Init()
   {
-		// Brake pinout F1 and G0
+		// Brake pinout F1 and G1
 		PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC);
 		PWMGenConfigure(PWM0_BASE, PWM_GEN_2, PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC);
 		brakes::SetPWM(0.843f, 0.155f); // Resting duty % for brakes
 		PWMGenEnable(PWM0_BASE, PWM_GEN_0);
 		PWMGenEnable(PWM0_BASE, PWM_GEN_2);
-		PWMOutputState(PWM0_BASE, (PWM_OUT_1_BIT | PWM_OUT_4_BIT), true);
+		PWMOutputState(PWM0_BASE, (PWM_OUT_1_BIT | PWM_OUT_5_BIT), true);
   }
 }
-
-/*
-float target_steering_angle = 0.0f;
-
-void SwitchHandler(void)
-{
-  GPIOIntClear(GPIOJ_AHB_BASE, GPIO_INT_PIN_0 | GPIO_INT_PIN_1);
-  
-  uint8_t data = GPIOPinRead(GPIOJ_AHB_BASE, GPIO_INT_PIN_0 | GPIO_INT_PIN_1);
-  
-  if((data & 0x2) == 0)
-  {
-    target_steering_angle = 0.5f;
-  }
-  else if((data & 0x1) == 0)
-  {
-    target_steering_angle = -0.5f;
-  }
-  else
-  {
-    target_steering_angle = 0.0f;
-  }
-}
-*/
-
-/*
-static const float STEERING_SAMPLE_TIME = .005;
-
-//                              ----------------     -----------------
-// Target Steer Angle --> E --> |PID Controller| --> |Steering System| --> Actual Steer Angle
-//                        ^     ----------------     -----------------  |
-//                        |                                             |
-//                        +---------------------------------------------+
-
-float k_p = 0.2;
-float k_i = 0.2;
-float k_d = 0.2;
-float Ts = STEERING_SAMPLE_TIME;
-
-float a = k_p + k_i*Ts/2.0f + k_d/Ts;
-float b = -k_p + k_i*Ts/2.0f - 2.0f*k_d/Ts;
-float c = k_d/Ts;
-
-float errors[3] = { 0.0f, 0.0f, 0.0f };
-unsigned int error_idx = 0;
-float forces[2] = { 0.0f, 0.0f };
-unsigned int force_idx = 0;
-
-#define IDX_MOD(arr, idx) ((arr)[((idx) + sizeof(arr)/sizeof(*(arr))) % sizeof(arr)/sizeof(*(arr))])
-
-void UpdatePID()
-{
-  TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-  
-  // PID input
-  error_idx ++; if(error_idx == 3) error_idx = 0;
-  float * e_0 = &IDX_MOD(errors, error_idx - 0);
-  float * e_1 = &IDX_MOD(errors, error_idx - 1);
-  float * e_2 = &IDX_MOD(errors, error_idx - 2);
-  
-  *e_0 = target_steering_angle - can_steering_angle;
-  
-  // PID output
-  force_idx ++; if(force_idx == 2) force_idx = 0;
-  float * f_0 = &IDX_MOD(forces, force_idx - 0);
-  float * f_1 = &IDX_MOD(forces, force_idx - 1);
-  
-  *f_0 = *f_1 + a*(*e_0) + b*(*e_1) + c*(*e_2);
-  
-  SetSteerForce(*f_0);
-}
-*/
 
 float accel_pulse_width = 0.0f;
 float steer_pulse_width = 0.0f;
@@ -280,23 +209,81 @@ void SteerPulseHandler(void)
   GPIOIntClear(GPIOM_BASE, GPIO_INT_PIN_7);
 }
 
+void modeSelectHandler(void)
+{
+	
+	GPIOIntClear(GPIOC_AHB_BASE, GPIO_INT_PIN_4);
+	
+	if(GPIOPinRead(GPIOC_AHB_BASE, GPIO_INT_PIN_4))
+	{
+		GPIOPinWrite(GPIOC_AHB_BASE,GPIO_INT_PIN_5,0xFF);
+	}
+	else
+	{
+		GPIOPinWrite(GPIOC_AHB_BASE,GPIO_INT_PIN_5,0x00);
+	}
+	
+	
+}
+
+void modeSelectSetup(void)
+{
+	//Mode select interrupt/switch
+	GPIOPinTypeGPIOInput(GPIOC_AHB_BASE, GPIO_PIN_4);
+	GPIOPinTypeGPIOOutput(GPIOC_AHB_BASE, GPIO_PIN_5);
+	GPIOPadConfigSet(GPIOC_AHB_BASE,GPIO_PIN_4,GPIO_STRENGTH_12MA,GPIO_PIN_TYPE_STD_WPU);
+	GPIOPadConfigSet(GPIOC_AHB_BASE,GPIO_PIN_5,GPIO_STRENGTH_12MA,GPIO_PIN_TYPE_STD);
+  GPIOIntTypeSet(GPIOC_AHB_BASE, GPIO_PIN_4, GPIO_BOTH_EDGES);
+  GPIOIntRegister(GPIOC_AHB_BASE, modeSelectHandler);
+	
+	if(GPIOPinRead(GPIOC_AHB_BASE, GPIO_INT_PIN_4))
+	{
+		GPIOPinWrite(GPIOC_AHB_BASE,GPIO_INT_PIN_5,0xFF);
+	}
+	else
+	{
+		GPIOPinWrite(GPIOC_AHB_BASE,GPIO_INT_PIN_5,0x00);
+	}
+	
+  GPIOIntEnable(GPIOC_AHB_BASE, GPIO_PIN_4);
+}
+
+void watchdogHandler(void)
+{
+	GPIOPinWrite(GPIOC_AHB_BASE,GPIO_INT_PIN_5,0x00);
+}
+
+void watchdogSetup(void)
+{
+	
+	WatchdogStallEnable(WATCHDOG0_BASE); //for debugging only
+	WatchdogReloadSet(WATCHDOG0_BASE,0xFFFFFF);
+	WatchdogResetDisable(WATCHDOG0_BASE);
+	WatchdogIntTypeSet(WATCHDOG0_BASE,WATCHDOG_INT_TYPE_INT);
+	WatchdogIntRegister(WATCHDOG0_BASE,watchdogHandler);
+	WatchdogIntEnable(WATCHDOG0_BASE);
+	WatchdogEnable(WATCHDOG0_BASE);
+}
+
 int main(void)
 {
   FPUEnable();
   
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_CAN0);
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_CAN1);
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOJ);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOK);
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOM);
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_CAN0);
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_CAN1);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER5);
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOM);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_I2C4);
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_WDOG0);
   
   // Steering PWM 
   GPIOPinTypePWM(GPIOF_AHB_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3);
@@ -304,9 +291,9 @@ int main(void)
   GPIOPinConfigure(GPIO_PF3_M0PWM3);
 	
 	// Braking PWM
-	GPIOPinTypePWM(GPIOG_AHB_BASE, GPIO_PIN_0);
+	GPIOPinTypePWM(GPIOG_AHB_BASE, GPIO_PIN_1);
 	GPIOPinConfigure(GPIO_PF1_M0PWM1);
-	GPIOPinConfigure(GPIO_PG0_M0PWM4);
+	GPIOPinConfigure(GPIO_PG1_M0PWM5);
   
   // Buttons
   /*
@@ -346,21 +333,25 @@ int main(void)
   GPIOIntTypeSet(GPIOM_BASE, GPIO_PIN_6 | GPIO_PIN_7, GPIO_BOTH_EDGES);
   GPIOIntRegister(GPIOM_BASE, PulseHandler);
   GPIOIntEnable(GPIOM_BASE, GPIO_INT_PIN_6 | GPIO_INT_PIN_7);
-  
+	
+	modeSelectSetup();
+	
+	//watchdogSetup();
+   
   steering::Init();
   accelerator::Init();
-  brakes::Init();
-  can_Init();
+	brakes::Init();
+  
+  //can_Init();
   
   IntMasterEnable();
   
-  //uint16_t count = 0;
+  //uint16_t count = 0; 
   while(true)
   {
     for(volatile int i = 0 ; i < 1000 ; i ++);
     
     UpdateAcceleration(accel_pulse_width);
     UpdateSteering(steer_pulse_width);
-		//UpdateBraking(brake_pulse_width);
   }
 }

@@ -258,6 +258,7 @@ void can_SetFiltering(uint8_t can_id, uint16_t arb_id, uint16_t arb_mask, uint8_
     }
   }
 }
+//Quick CAN CAN CAN CAN
 void can_ResetFunctions()
 {
   can0_log_entry_num = 0;
